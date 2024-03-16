@@ -37,8 +37,32 @@ const FindUserByUserID = async (req, res) => {
     })
 }
 
+const UpdateUser = async (req, res) => {
+    const { id } = req.params
+    const user = await User.findById(id)
+
+    res.json({
+        success: true,
+        message: "Updated",
+    })
+}
+
+const DeleteUser = async (req, res) => {
+
+    const { id } = req.params
+    const user = await User.findById(id)
+    await user.deleteOne(user)
+
+    res.json({
+        success: true,
+        message: "Deleted"
+    })
+}
+
 export {
     NewUser,
     GetAllUsers,
-    FindUserByUserID
+    FindUserByUserID,
+    UpdateUser,
+    DeleteUser
 }
