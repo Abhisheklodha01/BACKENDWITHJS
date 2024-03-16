@@ -1,19 +1,17 @@
 import { User } from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
 import { SendCookie } from "../utils/features.js";
+import ErrorHandler from "../middlewares/apiError.js";
 
 
-export const RegisterUser = async (req, res) => {
+export const RegisterUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     let user = await User.findOne({ email });
 
     if (user) {
-       res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
+      return next(new ErrorHandler(400, "user already exists"))
     } else {
       const hashPassword = await bcryptjs.hash(password, 10);
       user = await User.create({
@@ -25,39 +23,27 @@ export const RegisterUser = async (req, res) => {
       SendCookie(user, res, "Registered Successfully", 201);
     }
   } catch (error) {
-     res.json({
-      success: false,
-      message: "something Went Wrong"
-    })
+    next(error)
   }
 };
 
-export const LoginUser = async (req, res) => {
+export const LoginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-       res.status(400).json({
-        success: false,
-        message: "user does not exists",
-      });
+      return next(new ErrorHandler(400, "user does not exists"))
     } else {
       const isMatch = await bcryptjs.compare(password, user.password);
       if (!isMatch) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid password",
-        });
+        return next(new ErrorHandler(400, "Invalis password"))
       }
 
       SendCookie(user, res, `Welcome back ${user.name}`, 201);
     }
   } catch (error) {
-       res.json({
-      success: false,
-      message: "something Went Wrong"
-    })
+    next(error)
   }
 };
 
@@ -71,9 +57,11 @@ export const GetMyProfile = (req, res) => {
 
 export const Logout = (req, res) => {
 
-   res.status(200)
+  res.status(200)
     .cookie("token", "", {
-      expiresIn: Date.now()
+      expiresIn: Date.now(),
+      sameSite: process.env.NODE_ENV === "Dovelopment" ? "lax" : "none",
+      secure: process.env.NODE_ENV === "Dovelopment" ? false : true
     })
     .json({
       success: true,

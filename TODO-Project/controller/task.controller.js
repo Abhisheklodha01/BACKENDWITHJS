@@ -1,18 +1,14 @@
-import { ApiError } from "../middlewares/apiError.js";
+import ErrorHandler, { ApiError } from "../middlewares/apiError.js";
 import { Task } from "../models/task.model.js";
 
-export const newTask = async (req, res) => {
+export const newTask = async (req, res, next) => {
   try {
     const { title, description } = req.body;
     console.log(title, description);
 
     if (!title || !description) {
-      res.status(400).json({
-        success: false,
-        message: "Title and Description is required",
-      })
-    }
-    else {
+      return next(new ErrorHandler(400, "Title and Description is required"));
+    } else {
       await Task.create({
         title,
         description,
@@ -22,87 +18,63 @@ export const newTask = async (req, res) => {
       res.status(201).json({
         success: true,
         message: "Task added successfully",
-      })
+      });
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "something went wrong while saving the task",
-    });
+    next(error);
   }
 };
 
-export const GetAllTask = async (req, res) => {
+export const GetAllTask = async (req, res, next) => {
   try {
-    const userid = req.user._id
+    const userid = req.user._id;
     if (!userid) {
-      res.status(400).json({
-        success: false,
-        message: "Please login first"
-      })
-    }
-    else {
-      const tasks = await Task.find({ user: userid })
+      return next(new ErrorHandler(404, "User not found please login"));
+    } else {
+      const tasks = await Task.find({ user: userid });
       res.status(200).json({
         success: true,
-        tasks
-      })
+        tasks,
+      });
     }
   } catch (error) {
-    res.json({
-      message: "something went wrong while fetching the tasks"
-    })
+    next(error);
   }
-}
+};
 
-export const updateTask = async (req, res) => {
-  
+export const updateTask = async (req, res, next) => {
   try {
-    const { id } = req.params
-    const task = await Task.findById(id)
+    const task = await Task.findById(req.params.id);
     if (!task) {
-      res.status(404).json({
-        success: false,
-        message: " task not found"
-      })
+      return next(new ErrorHandler(404, "Task not found"));
     }
-    task.isCompeleted = !task.isCompeleted
-    await task.save()
+    task.isCompeleted = !task.isCompeleted;
+    await task.save();
 
     res.status(200).json({
       success: true,
-      message: "Task updated successfully"
-    })
+      message: "Task updated successfully",
+    });
   } catch (error) {
-    res.json({
-      message: "something went wrong while fetching the task"
-    })
+    next(error);
   }
+};
 
-}
-
-export const deleteTask = async (req, res) => {
+export const deleteTask = async (req, res, next) => {
   try {
-    const { id } = req.params
-    const task = await Task.findById(id)
+    const task = await Task.findById(req.params.id);
     if (!task) {
-      res.status(404).json({
-        success: false,
-        message: " task not found"
-      })
+      return next(new ErrorHandler(404, "Task not found"));
     }
-    await task.deleteOne()
+    await task.deleteOne();
     res.status(200).json({
       success: true,
-      message: "Task deleted successfully"
-    })
+      message: "Task deleted successfully",
+    });
   } catch (error) {
-    res.json({
-      message: "something went wrong while deleting the task"
-    })
+    next(error);
   }
-}
-
+};
 
 //   another method to save data in database
 
